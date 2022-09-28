@@ -1,6 +1,14 @@
 from django.http import JsonResponse
-
+# from json import JSONEncoder
+# from common.json import ModelEncoder
 from .models import Conference, Location
+
+from encoders import (
+    LocationListEncoder,
+    LocationDetailEncoder,
+    ConferenceListEncoder,
+    ConferenceDetailEncoder,
+)
 
 
 def api_list_conferences(request):
@@ -22,16 +30,24 @@ def api_list_conferences(request):
         ]
     }
     """
-    response = []
     conferences = Conference.objects.all()
-    for conference in conferences:
-        response.append(
-            {
-                "name": conference.name,
-                "href": conference.get_api_url(),
-            }
-        )
-    return JsonResponse({"conferences": response})
+    return JsonResponse(
+        # conferences,  # also works
+        {"conferences": conferences},
+        encoder=ConferenceListEncoder,
+        safe=False
+    )
+
+    # response = []
+    # conferences = Conference.objects.all()
+    # for conference in conferences:
+    #     response.append(
+    #         {
+    #             "name": conference.name,
+    #             "href": conference.get_api_url(),
+    #         }
+    #     )
+    # return JsonResponse({"conferences": response})
 
 
 def api_show_conference(request, pk):
@@ -61,21 +77,34 @@ def api_show_conference(request, pk):
     """
     conference = Conference.objects.get(id=pk)
     return JsonResponse(
-        {
-            "name": conference.name,
-            "starts": conference.starts,
-            "ends": conference.ends,
-            "description": conference.description,
-            "created": conference.created,
-            "updated": conference.updated,
-            "max_presentations": conference.max_presentations,
-            "max_attendees": conference.max_attendees,
-            "location": {
-                "name": conference.location.name,
-                "href": conference.location.get_api_url(),
-            },
-        }
+        conference,
+        encoder=ConferenceDetailEncoder,
+        safe=False,
     )
+
+    # encoder handles conversion
+    # safe = False allows other serialized form of data (function requires dictionary)
+
+    # DOESN'T WORK
+    # return JsonResponse(conference)
+
+    # NOT DRY
+    # return JsonResponse(
+    #     {
+    #         "name": conference.name,
+    #         "starts": conference.starts,
+    #         "ends": conference.ends,
+    #         "description": conference.description,
+    #         "created": conference.created,
+    #         "updated": conference.updated,
+    #         "max_presentations": conference.max_presentations,
+    #         "max_attendees": conference.max_attendees,
+    #         "location": {
+    #             "name": conference.location.name,
+    #             "href": conference.location.get_api_url(),
+    #         },
+    #     }
+    # )
 
 
 def api_list_locations(request):
@@ -97,15 +126,23 @@ def api_list_locations(request):
         ]
     }
     """
-    locations = [
-        {
-            "name": loc.name,
-            "href": loc.get_api_url(),
-        }
-        for loc in Location.objects.all()
-    ]
+    locations = Location.objects.all()
+    return JsonResponse(
+        # locations,
+        {"locations": locations},
+        encoder=LocationListEncoder,
+        safe=False
+    )
 
-    return JsonResponse({"locations": locations})
+    # locations = [
+    #     {
+    #         "name": loc.name,
+    #         "href": loc.get_api_url(),
+    #     }
+    #     for loc in Location.objects.all()
+    # ]
+
+    # return JsonResponse({"locations": locations})
 
 
 def api_show_location(request, pk):
@@ -126,14 +163,19 @@ def api_show_location(request, pk):
     }
     """
     location = Location.objects.get(id=pk)
-
     return JsonResponse(
-        {
-            "name": location.name,
-            "city": location.city,
-            "room_count": location.room_count,
-            "created": location.created,
-            "updated": location.updated,
-            "state": location.state.abbreviation,
-        },
+        location,
+        encoder=LocationDetailEncoder,
+        safe=False
     )
+
+    # return JsonResponse(
+    #     {
+    #         "name": location.name,
+    #         "city": location.city,
+    #         "room_count": location.room_count,
+    #         "created": location.created,
+    #         "updated": location.updated,
+    #         "state": location.state.abbreviation,
+    #     },
+    # )
