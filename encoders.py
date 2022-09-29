@@ -1,5 +1,6 @@
 from events.models import Conference, Location
 from presentations.models import Presentation
+from attendees.models import Attendee
 from common.json import ModelEncoder
 
 
@@ -46,7 +47,9 @@ class ConferenceDetailEncoder(ModelEncoder):
         "max_presentations",
         "max_attendees",
         "location",
-    ]  # defines what part of a conference we actually want to convert into json
+    ]
+    # defines what part of a conference we actually want
+    # to convert into json
     encoders = {
         "location": LocationListEncoder(),
     }
@@ -75,9 +78,34 @@ class PresentationDetailEncoder(ModelEncoder):
         "synopsis",
         "created",
         "status",
+        "conference",
     ]
+    encoders = {
+        "conference": ConferenceListEncoder(),
+    }
 
     # override get_extra_data of class def
     def get_extra_data(self, o):
         # return populated to dict (to update d with in ModelEncoder)
         return {"status": o.status.name}
+
+
+class AttendeeListEncoder(ModelEncoder):
+    model = Attendee
+    properties = [
+        "name",
+    ]
+
+
+class AttendeeDetailEncoder(ModelEncoder):
+    model = Attendee
+    properties = [
+        "email",
+        "name",
+        "company_name",
+        "created",
+        "conference",
+    ]
+    encoders = {
+        "conference": ConferenceListEncoder(),
+    }

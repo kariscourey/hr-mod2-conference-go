@@ -66,5 +66,12 @@ class Presentation(models.Model):
         # self.status.update(status)  # doesn't work?
         self.save()
 
+    @classmethod  # TODO - understand
+    def create(cls, **kwargs):
+        kwargs["status"] = Status.objects.get(name="SUBMITTED")
+        presentation = cls(**kwargs)
+        presentation.save()
+        return presentation
+
     class Meta:
         ordering = ("title",)  # Default ordering for presentation

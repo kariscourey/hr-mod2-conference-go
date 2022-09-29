@@ -1,7 +1,10 @@
 from django.http import JsonResponse
+
 # from json import JSONEncoder
 # from common.json import ModelEncoder
-from .models import Conference, Location
+from .models import Conference, Location, State
+from django.views.decorators.http import require_http_methods
+import json
 
 from encoders import (
     LocationListEncoder,
@@ -11,6 +14,7 @@ from encoders import (
 )
 
 
+@require_http_methods(["GET", "POST"])
 def api_list_conferences(request):
     """
     Lists the conference names and the link to the conference.
@@ -30,13 +34,39 @@ def api_list_conferences(request):
         ]
     }
     """
+    # get model instances given specific id
     conferences = Conference.objects.all()
-    return JsonResponse(
-        # conferences,  # also works
-        {"conferences": conferences},
-        encoder=ConferenceListEncoder,
-        safe=False
-    )
+
+    # Get a list of all of the instances of «resource»
+    if request.method == "GET":
+        # return json with instance parameters serialized to json
+        return JsonResponse(
+            # conferences,  # also works
+            {"conferences": conferences},
+            encoder=ConferenceListEncoder,
+            safe=False,
+        )
+
+    # Create a new instance of «resource» with the posted data
+    else:  # POST
+        content = json.loads(request.body)
+
+        # Get the Location object and put it in the content dict
+        try:
+            location = Location.objects.get(id=content["location"])
+            content["location"] = location
+        except Location.DoesNotExist:
+            return JsonResponse(
+                {"message": "Invalid location id"},
+                status=400,
+            )
+
+        conference = Conference.objects.create(**content)
+        return JsonResponse(
+            conference,
+            encoder=ConferenceDetailEncoder,
+            safe=False,
+        )
 
     # response = []
     # conferences = Conference.objects.all()
@@ -50,6 +80,7 @@ def api_list_conferences(request):
     # return JsonResponse({"conferences": response})
 
 
+@require_http_methods({"GET", "DELETE", "PUT"})
 def api_show_conference(request, pk):
     """
     Returns the details for the Conference model specified
@@ -75,38 +106,55 @@ def api_show_conference(request, pk):
         }
     }
     """
-    conference = Conference.objects.get(id=pk)
-    return JsonResponse(
-        conference,
-        encoder=ConferenceDetailEncoder,
-        safe=False,
-    )
+    if request.method == "GET":
+        # get model instance given specific id
+        conference = Conference.objects.get(id=pk)
+
+        # return json with instance parameters serialized to json
+        return JsonResponse(
+            conference,
+            encoder=ConferenceDetailEncoder,
+            safe=False,
+        )
+
+    elif request.method == "DELETE":
+        count, _ = Conference.objects.filter(id=pk).delete()
+
+        return JsonResponse(
+            {"deleted": count > 0},
+        )
+
+    else:
+        content = json.loads(request.body)
+
+        try:
+            if "location" in content:
+                location = Location.objects.get(id=content["location"])
+                content["location"] = location
+        except Location.DoesNotExist:
+            return JsonResponse(
+                {"message": "Invalid location id"},
+                status=400,
+            )
+
+        Conference.objects.filter(id=pk).update(**content)
+        conference = Conference.objects.get(id=pk)
+
+        return JsonResponse(
+            conference,
+            encoder=ConferenceDetailEncoder,
+            safe=False,
+        )
 
     # encoder handles conversion
-    # safe = False allows other serialized form of data (function requires dictionary)
+    # safe = False allows other serialized form of data
+    # (function requires dictionary)
 
     # DOESN'T WORK
     # return JsonResponse(conference)
 
-    # NOT DRY
-    # return JsonResponse(
-    #     {
-    #         "name": conference.name,
-    #         "starts": conference.starts,
-    #         "ends": conference.ends,
-    #         "description": conference.description,
-    #         "created": conference.created,
-    #         "updated": conference.updated,
-    #         "max_presentations": conference.max_presentations,
-    #         "max_attendees": conference.max_attendees,
-    #         "location": {
-    #             "name": conference.location.name,
-    #             "href": conference.location.get_api_url(),
-    #         },
-    #     }
-    # )
 
-
+@require_http_methods(["GET", "POST"])
 def api_list_locations(request):
     """
     Lists the location names and the link to the location.
@@ -126,25 +174,49 @@ def api_list_locations(request):
         ]
     }
     """
+
     locations = Location.objects.all()
-    return JsonResponse(
-        # locations,
-        {"locations": locations},
-        encoder=LocationListEncoder,
-        safe=False
-    )
 
-    # locations = [
-    #     {
-    #         "name": loc.name,
-    #         "href": loc.get_api_url(),
-    #     }
-    #     for loc in Location.objects.all()
-    # ]
+    # if Gets a list of all of the instances of «resource»
+    if request.method == "GET":
+        return JsonResponse(
+            # locations,
+            {"locations": locations},
+            encoder=LocationListEncoder,
+            safe=False,
+        )
 
-    # return JsonResponse({"locations": locations})
+    # if Create a new instance of «resource» with the posted data
+    elif request.method == "POST":
+
+        # 1. Decode JSON into dict
+        content = json.loads(request.body)
+
+        # Get the State object and put it in the content dict
+        try:
+            # 2. Translate properties into model objects
+            state = State.objects.get(abbreviation=content["state"])
+            content["state"] = state
+
+        # 3. Handle any errors that could happen
+        except State.DoesNotExist:
+            return JsonResponse(
+                {"message": "Invalid state abbreviation"},
+                status=404,
+            )
+
+        # 4. Create new Entity instance
+        location = Location.objects.create(**content)  # TODO - understand
+
+        # 5. Return new entity in JsonResponse
+        return JsonResponse(
+            location,
+            encoder=LocationDetailEncoder,
+            safe=False
+        )
 
 
+@require_http_methods(["DELETE", "GET", "PUT"])
 def api_show_location(request, pk):
     """
     Returns the details for the Location model specified
@@ -162,20 +234,46 @@ def api_show_location(request, pk):
         "state": the two-letter abbreviation for the state,
     }
     """
-    location = Location.objects.get(id=pk)
-    return JsonResponse(
-        location,
-        encoder=LocationDetailEncoder,
-        safe=False
-    )
 
-    # return JsonResponse(
-    #     {
-    #         "name": location.name,
-    #         "city": location.city,
-    #         "room_count": location.room_count,
-    #         "created": location.created,
-    #         "updated": location.updated,
-    #         "state": location.state.abbreviation,
-    #     },
-    # )
+    # if Gets the details of one instance of «resource»
+    if request.method == "GET":
+        location = Location.objects.get(id=pk)
+        return JsonResponse(
+            location,
+            encoder=LocationDetailEncoder,
+            safe=False
+        )
+
+    elif request.method == "DELETE":
+        count, _ = Location.objects.filter(id=pk).delete()
+        # per docs, delete() returns # objects deleted, dict
+        # with # del per object type
+        return JsonResponse({"deleted": count > 0})
+
+    # if Updates the details of one instance of «resource» (PUT)
+    elif request.method == "PUT":
+        # 1. Convert the submitted JSON-formatted string into a dictionary.
+        content = json.loads(request.body)
+
+        # 2. Convert the state abbreviation into a State, if it exists.
+        try:
+            if "state" in content:
+                state = State.objects.get(abbreviation=content["state"])
+                content["state"] = state
+        except State.DoesNotExist:
+            return JsonResponse(
+                {"message": "Invalid state abbreviation"},
+                status=400,
+            )
+
+        # 3. Use that dictionary to update the existing Location.
+        Location.objects.filter(id=pk).update(**content)
+        # .update(**content) inserts content into instance of model
+
+        # 4. Return the updated Location object.
+        location = Location.objects.get(id=pk)
+        return JsonResponse(
+            location,
+            encoder=LocationDetailEncoder,
+            safe=False,
+        )
