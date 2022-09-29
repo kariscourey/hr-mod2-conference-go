@@ -6,6 +6,8 @@ from .models import Conference, Location, State
 from django.views.decorators.http import require_http_methods
 import json
 
+from .acl import get_image, get_weather
+
 from encoders import (
     LocationListEncoder,
     LocationDetailEncoder,
@@ -49,6 +51,8 @@ def api_list_conferences(request):
 
     # Create a new instance of «resource» with the posted data
     else:  # POST
+
+        # create a conference
         content = json.loads(request.body)
 
         # Get the Location object and put it in the content dict
@@ -110,9 +114,17 @@ def api_show_conference(request, pk):
         # get model instance given specific id
         conference = Conference.objects.get(id=pk)
 
+        # get city, state from conference
+        city = conference.location.city
+        state = conference.location.state
+
+        # get weather data
+        weather = get_weather(city, state.name)
+
         # return json with instance parameters serialized to json
+        # include weather data in jsonresponse (not in db instance)
         return JsonResponse(
-            conference,
+            {"conference": conference, "weather": weather},
             encoder=ConferenceDetailEncoder,
             safe=False,
         )
@@ -190,7 +202,19 @@ def api_list_locations(request):
     elif request.method == "POST":
 
         # 1. Decode JSON into dict
+        # create a location
         content = json.loads(request.body)
+
+        # get the city and state from content
+        city = content["city"]
+        state = content["state"]
+
+        # get image
+        image_url = get_image(city, state)
+
+        # add image to new model (need to add field to actual
+        # location model first)
+        content["image_url"] = image_url
 
         # Get the State object and put it in the content dict
         try:
@@ -210,9 +234,7 @@ def api_list_locations(request):
 
         # 5. Return new entity in JsonResponse
         return JsonResponse(
-            location,
-            encoder=LocationDetailEncoder,
-            safe=False
+            location, encoder=LocationDetailEncoder, safe=False
         )
 
 
@@ -239,9 +261,7 @@ def api_show_location(request, pk):
     if request.method == "GET":
         location = Location.objects.get(id=pk)
         return JsonResponse(
-            location,
-            encoder=LocationDetailEncoder,
-            safe=False
+            location, encoder=LocationDetailEncoder, safe=False
         )
 
     elif request.method == "DELETE":

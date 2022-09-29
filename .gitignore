@@ -143,6 +143,9 @@ venv.bak/
 .dmypy.json
 dmypy.json
 
+# API keys
+events/keys.py
+
 # Pyre type checker
 .pyre/
 

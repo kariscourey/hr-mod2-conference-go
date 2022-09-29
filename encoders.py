@@ -20,6 +20,7 @@ class LocationDetailEncoder(ModelEncoder):
         "created",
         "updated",
         "state",
+        "image_url",
     ]
 
     # override get_extra_data of class def
