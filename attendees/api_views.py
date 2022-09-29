@@ -1,11 +1,11 @@
+import json
+
 from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from encoders import AttendeeDetailEncoder, AttendeeListEncoder
+from events.models import Conference
 
 from .models import Attendee
-from events.models import Conference
-from encoders import AttendeeDetailEncoder, AttendeeListEncoder
-
-from django.views.decorators.http import require_http_methods
-import json
 
 
 @require_http_methods(["GET", "POST"])

@@ -1,7 +1,7 @@
-from events.models import Conference, Location
-from presentations.models import Presentation
 from attendees.models import Attendee
 from common.json import ModelEncoder
+from events.models import Conference, Location
+from presentations.models import Presentation
 
 
 class LocationListEncoder(ModelEncoder):

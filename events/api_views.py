@@ -1,20 +1,15 @@
+import json
+
 from django.http import JsonResponse
+from django.views.decorators.http import require_http_methods
+from encoders import (ConferenceDetailEncoder, ConferenceListEncoder,
+                      LocationDetailEncoder, LocationListEncoder)
+
+from .acl import get_coord, get_image, get_weather
+from .models import Conference, Location, State
 
 # from json import JSONEncoder
 # from common.json import ModelEncoder
-from .models import Conference, Location, State
-from django.views.decorators.http import require_http_methods
-import json
-
-from .acl import get_image, get_weather
-
-from encoders import (
-    LocationListEncoder,
-    LocationDetailEncoder,
-    ConferenceListEncoder,
-    ConferenceDetailEncoder,
-)
-
 
 @require_http_methods(["GET", "POST"])
 def api_list_conferences(request):
@@ -118,14 +113,21 @@ def api_show_conference(request, pk):
         city = conference.location.city
         state = conference.location.state
 
+        # get coords
+        lat, lon = get_coord(city, state.name)
+
         # get weather data
-        weather = get_weather(city, state.name)
+        if lat and lon:
+            weather = get_weather(lat, lon)
+        else:
+            weather = None
 
         # return json with instance parameters serialized to json
         # include weather data in jsonresponse (not in db instance)
         return JsonResponse(
             {"conference": conference, "weather": weather},
             encoder=ConferenceDetailEncoder,
+            # encoder will only act on conference model instances
             safe=False,
         )
 
@@ -274,6 +276,17 @@ def api_show_location(request, pk):
     elif request.method == "PUT":
         # 1. Convert the submitted JSON-formatted string into a dictionary.
         content = json.loads(request.body)
+
+        # get the city and state from content
+        city = content["city"]
+        state = content["state"]
+
+        # get image
+        image_url = get_image(city, state)
+
+        # add image to new model (need to add field to actual
+        # location model first)
+        content["image_url"] = image_url
 
         # 2. Convert the state abbreviation into a State, if it exists.
         try:
