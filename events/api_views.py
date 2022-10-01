@@ -2,14 +2,19 @@ import json
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from encoders import (ConferenceDetailEncoder, ConferenceListEncoder,
-                      LocationDetailEncoder, LocationListEncoder)
+from common.encoders import (
+    ConferenceDetailEncoder,
+    ConferenceListEncoder,
+    LocationDetailEncoder,
+    LocationListEncoder,
+)
 
 from .acl import get_coord, get_image, get_weather
 from .models import Conference, Location, State
 
 # from json import JSONEncoder
 # from common.json import ModelEncoder
+
 
 @require_http_methods(["GET", "POST"])
 def api_list_conferences(request):

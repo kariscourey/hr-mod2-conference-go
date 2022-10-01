@@ -1,5 +1,6 @@
-from json import JSONEncoder
 from datetime import datetime
+from json import JSONEncoder
+
 from django.db.models import QuerySet
 
 
@@ -52,7 +53,7 @@ class ModelEncoder(DateEncoder, QuerySetEncoder, JSONEncoder):
                 if property in self.encoders:
                     # store value of property (encoder name)
                     encoder = self.encoders[property]
-                    # set value (to add to d) to #TODO ???
+                    # set value (to add to d) to #TODO - understand
                     value = encoder.default(value)
 
                 # put it into the dictionary with that property name as

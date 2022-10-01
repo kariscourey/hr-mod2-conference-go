@@ -2,7 +2,7 @@ import json
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from encoders import AttendeeDetailEncoder, AttendeeListEncoder
+from common.encoders import AttendeeDetailEncoder, AttendeeListEncoder
 from events.models import Conference
 
 from .models import Attendee
@@ -104,9 +104,7 @@ def api_show_attendee(request, pk):
 
     elif request.method == "DELETE":
         count, _ = Attendee.objects.filter(id=pk).delete()
-        return JsonResponse(
-            {"deleted": count > 0}
-        )
+        return JsonResponse({"deleted": count > 0})
 
     elif request.method == "PUT":
         content = json.loads(request.body)
@@ -118,8 +116,6 @@ def api_show_attendee(request, pk):
             encoder=AttendeeDetailEncoder,
             safe=False,
         )
-
-
 
     # attendee = Attendee.objects.get(id=pk)
 

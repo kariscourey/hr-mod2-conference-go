@@ -2,7 +2,7 @@ import json
 
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
-from encoders import PresentationDetailEncoder, PresentationListEncoder
+from common.encoders import PresentationDetailEncoder, PresentationListEncoder
 from events.models import Conference
 
 from .models import Presentation
@@ -54,7 +54,7 @@ def api_list_presentations(request, conference_id):
                 status=400,
             )
 
-        presentation = Presentation.create(**content)  # TODO - understand
+        presentation = Presentation.create(**content)
 
         return JsonResponse(
             presentation,
