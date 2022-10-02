@@ -2,7 +2,7 @@
 FROM python:3
 
 # Install any operating system junk
-
+# why don't we need this?
 
 # Set the working directory to copy stuff to
 WORKDIR /app

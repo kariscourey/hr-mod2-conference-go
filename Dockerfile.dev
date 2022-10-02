@@ -1,6 +1,25 @@
+# We want to use the same base image, the python:3 base image
 FROM python:3
+# We set an environment variable so that Python prints things immediately
 ENV PYTHONUNBUFFERED 1
+# We set the working directory to /app
 WORKDIR /app
+# We copy over the requirements.txt so that we can install from it
 COPY requirements.txt requirements.txt
+# We install the dependencies using pip
 RUN pip install -r requirements.txt
+# We run the Django development server
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+
+
+# build image
+# docker build -f Dockerfile.dev . -t conference-go-dev
+
+# run container with volume pointing to pwd
+# docker run -v "$(pwd):/app" -p 8000:8000 conference-go-dev
+
+# install a package
+# Manually add the package name and version the requirements.txt
+# Stop the running container, if one is running
+# Rebuild the development image using Dockerfile.dev
+# Start a new container with the new image
